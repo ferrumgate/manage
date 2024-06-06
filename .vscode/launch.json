@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "linux": {},
+            "name": "Launch Program",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "cwd": "${workspaceFolder}/build",
+            "program": "${workspaceFolder}/build/src/main.js",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "env": {
+                "ES_HOST": "localhost:9200",
+                "ES_USER": "test",
+                "ES_PASS": "123",
+                "ES_MULTI_HOST": "http://192.168.88.250:9200",
+                "ES_MULTI_USER": "elastic",
+                "ES_MULTI_PASS": "123456",
+            },
+            "outputCapture": "console",
+            "preLaunchTask": "build"
+        }
+    ]
+}
