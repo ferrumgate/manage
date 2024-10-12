@@ -19,7 +19,7 @@ async function main() {
     const esPort = Number(esHost.split(':')[1]) || 9200;
     const esUser = process.env.ES_USER || '';
     const esPass = process.env.ES_PASS || '';
-    const ferrumCloudId = process.env.FERRUM_CLOUD_ID || '';
+    const ferrumCloudId = (process.env.FERRUM_CLOUD_ID || '').toLowerCase();;
     const ferrumEsHost = process.env.ES_MULTI_HOST || 'http://1.2.3.4:9200';
     const ferrumEsUser = process.env.ES_MULTI_USER || '';
     const ferrumEsPass = process.env.ES_MULTI_PASS || '';
