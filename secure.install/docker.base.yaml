@@ -1,0 +1,745 @@
+networks:
+  ferrum:
+
+volumes:
+  redis:
+  redis-intel:
+  redis-local:
+  redis-sentinel:
+  redis-intel-sentinel:
+  es:
+  ferrum:
+
+services:
+  redis:
+    image: redis:7-bullseye
+    command:
+      - /bin/bash
+      - -c
+      - |
+        CONF_FILE=/data/redis.conf
+        if [ ! -f $$CONF_FILE ];then
+        cat > $$CONF_FILE << EOF
+        requirepass ${REDIS_PASS}
+        masterauth ${REDIS_PASS}
+        protected-mode yes
+        daemonize no
+        tcp-backlog 511
+        timeout 0
+        tcp-keepalive 300
+        maxclients 100000
+        appendonly yes
+        dir /data
+        replica-announce-ip ${CLUSTER_NODE_IP}
+        replica-announce-port 6379
+        EOF
+        else
+        sed -i "s#^requirepass.*#requirepass ${REDIS_PASS}#g" $$CONF_FILE
+        sed -i "s#^masterauth.*#masterauth ${REDIS_PASS}#g" $$CONF_FILE
+        sed -i "s#^replica-announce-ip.*#replica-announce-ip ${CLUSTER_NODE_IP}#g" $$CONF_FILE
+        fi
+
+
+        redis-server $$CONF_FILE
+    restart: always
+    ports:
+      - ${CLUSTER_NODE_IP}:6379:6379
+      - ${CLUSTER_NODE_IPW}:6379:6379
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        delay: 5s
+      placement:
+        constraints:
+          - Ferrum_Node=management
+    networks:
+      - ferrum
+    volumes:
+      - redis:/data
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  redis-sentinel:
+    image: redis:7-bullseye
+    command:
+      - /bin/bash
+      - -c
+      - |
+        CONF_FILE=/data/sentinel.conf
+        if [ ! -f $$CONF_FILE ];then
+        echo "" > $$CONF_FILE
+        echo "protected-mode no" >> $$CONF_FILE
+        echo "dir /data" >> $$CONF_FILE
+        echo "sentinel announce-ip ${CLUSTER_NODE_IP}">>$$CONF_FILE
+        echo "sentinel announce-port 26379">>$$CONF_FILE
+        echo "sentinel monitor redis ${CLUSTER_REDIS_MASTER} 6379 ${CLUSTER_REDIS_QUORUM}" >> $$CONF_FILE
+        echo "sentinel auth-pass redis ${REDIS_PASS}" >> $$CONF_FILE 
+        echo "sentinel down-after-milliseconds redis 60000" >> $$CONF_FILE
+        echo "sentinel failover-timeout redis 180000" >> $$CONF_FILE
+        echo "sentinel parallel-syncs redis 1" >> $$CONF_FILE
+        else
+        sed -i "s#^sentinel announce-ip.*#sentinel announce-ip ${CLUSTER_NODE_IP}#g" $$CONF_FILE
+        sed -i "s#^sentinel auth-pass redis.*#sentinel auth-pass redis ${REDIS_PASS}#g" $$CONF_FILE
+        fi
+        redis_master="${CLUSTER_NODE_PEERS}"
+        if [[ ! -z $${redis_master} ]] && [[ ${REDIS_HOST} == "redis"* ]];then
+          echo "starting sentinel"
+          redis-server $$CONF_FILE --sentinel
+        else
+          echo "no redis cluster, closing sentinel"
+          rm $$CONF_FILE
+        fi
+    restart: always
+    ports:
+      - ${CLUSTER_NODE_IP}:26379:26379
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    volumes:
+      - redis-sentinel:/data
+    depends_on:
+      - redis
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  redis-ha:
+    image: haproxy:2.8.1-bullseye
+    command:
+      - /bin/bash
+      - -c
+      - |
+        CONF_FILE=haproxy.cfg
+          
+          cat > $$CONF_FILE << EOF
+        global
+         log stdout format raw local0
+        defaults rediscluster
+        mode tcp
+        timeout connect  4s
+        timeout server  30s
+        timeout client  30s
+
+        frontend frontend_redis
+          bind :7379 name redis
+          default_backend backend_redis
+
+        backend backend_redis
+              option tcp-check
+                    tcp-check send "auth ${REDIS_PASS}"\r\n
+                    tcp-check expect string +OK
+                    tcp-check send info\ replication\r\n
+                    tcp-check expect string role:master
+                    tcp-check send QUIT\r\n
+              tcp-check expect string +OK
+        EOF
+        echo " server ${CLUSTER_NODE_HOST} ${CLUSTER_NODE_IP}:6379 check inter 3s  fall 3  rise 21" >> $$CONF_FILE
+        peers="${CLUSTER_NODE_PEERS}"
+
+        for line in $$peers;do
+          
+          host=$$(echo "$$line"|cut -d'/' -f1);
+          ip=$$(echo "$$line"|cut -d'/' -f3);
+          port=6379
+          if [ ! -z "$$host" ] && [ ! -z "$$ip" ];then
+          echo " server $$host $$ip:$$port check inter 3s  fall 3  rise 21" >> $$CONF_FILE
+          fi
+
+        done
+
+        redis_master="${CLUSTER_NODE_PEERS}"
+        ferrum_cloud_id="${FERRUM_CLOUD_ID}"
+        if [ -z "$$ferrum_cloud_id" ] || [ ! -z "$$redis_master" ];then
+         echo "starting redis-ha"
+         haproxy  -f haproxy.cfg
+        else 
+          echo "no redis cluster, closing ha"
+        fi
+    restart: always
+    ports: 
+      - ${CLUSTER_NODE_IP}:7379:7379
+      - ${CLUSTER_NODE_IPW}:7379:7379
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    depends_on:
+      - redis
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  redis-intel:
+    image: redis:7-bullseye
+    command:
+      - /bin/bash
+      - -c
+      - |
+        CONF_FILE=/data/redis.conf
+        if [ ! -f $$CONF_FILE ];then
+        cat > $$CONF_FILE << EOF
+        requirepass ${REDIS_INTEL_PASS}
+        masterauth ${REDIS_INTEL_PASS}
+        protected-mode yes
+        daemonize no
+        tcp-backlog 511
+        port 6380
+        timeout 0
+        tcp-keepalive 300
+        maxclients 100000
+        appendonly yes
+        dir /data
+        replica-announce-ip ${CLUSTER_NODE_IP}
+        replica-announce-port 6380
+        EOF
+        else
+        sed -i "s#^requirepass.*#requirepass ${REDIS_INTEL_PASS}#g" $$CONF_FILE
+        sed -i "s#^masterauth.*#masterauth ${REDIS_INTEL_PASS}#g" $$CONF_FILE
+        sed -i "s#^replica-announce-ip.*#replica-announce-ip ${CLUSTER_NODE_IP}#g" $$CONF_FILE
+        fi
+
+        roles="${ROLES}"
+        peersw="${CLUSTER_NODE_PEERSW}"
+        roles_count=$$(echo $$roles | grep master | wc -l)
+        if [ $$roles_count = 0 ];then
+          ip=$$(echo "$$peersw" | cut -d'/' -f3)
+          if [ $$(cat $$CONF_FILE | grep replicaof | wc -l) = 0 ];then
+             echo "replicaof $$ip 6380" >> $$CONF_FILE
+             echo "replica-priority 0" >> $$CONF_FILE
+          else
+            sed -i "s#^replicaof.*#replicaof $$ip 6380#g" $$CONF_FILE
+          fi
+        else          
+            sed -i '/^replica-priority/d' $$CONF_FILE          
+        fi
+
+        redis-server $$CONF_FILE
+    restart: always
+    ports:
+      - ${CLUSTER_NODE_IP}:6380:6380
+      - ${CLUSTER_NODE_IPW}:6380:6380
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        delay: 5s
+      placement:
+        constraints:
+          - Ferrum_Node=management
+    networks:
+      - ferrum
+    volumes:
+      - redis-intel:/data
+    logging:
+      driver: local
+    profiles:
+      - master
+      - worker
+
+  redis-intel-sentinel:
+    image: redis:7-bullseye
+    command:
+      - /bin/bash
+      - -c
+      - |
+        CONF_FILE=/data/sentinel.conf
+        if [ ! -f $$CONF_FILE ];then
+        echo "" > $$CONF_FILE
+        echo "protected-mode no" >> $$CONF_FILE
+        echo "dir /data" >> $$CONF_FILE
+        echo "port 26380" >> $$CONF_FILE
+        echo "sentinel announce-ip ${CLUSTER_NODE_IP}">>$$CONF_FILE
+        echo "sentinel announce-port 26380">>$$CONF_FILE
+        echo "sentinel monitor redis ${CLUSTER_REDIS_INTEL_MASTER} 6380 ${CLUSTER_REDIS_INTEL_QUORUM}" >> $$CONF_FILE
+        echo "sentinel auth-pass redis ${REDIS_INTEL_PASS}" >> $$CONF_FILE 
+        echo "sentinel down-after-milliseconds redis 60000" >> $$CONF_FILE
+        echo "sentinel failover-timeout redis 180000" >> $$CONF_FILE
+        echo "sentinel parallel-syncs redis 1" >> $$CONF_FILE
+        else
+        sed -i "s#^sentinel announce-ip.*#sentinel announce-ip ${CLUSTER_NODE_IP}#g" $$CONF_FILE
+        sed -i "s#^sentinel auth-pass redis.*#sentinel auth-pass redis ${REDIS_INTEL_PASS}#g" $$CONF_FILE
+        fi
+
+        redis_master="${CLUSTER_NODE_PEERS}"
+        if [[ ! -z $${redis_master} ]] && [[ ${REDIS_HOST} == "redis"* ]];then
+          echo "starting sentinel"
+          redis-server $$CONF_FILE --sentinel
+        else
+          echo "no redis cluster, closing sentinel"
+          rm $$CONF_FILE
+        fi
+    restart: always
+    ports:
+      - ${CLUSTER_NODE_IP}:26380:26380
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    volumes:
+      - redis-intel-sentinel:/data
+    depends_on:
+      - redis-intel
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  redis-intel-ha:
+    image: haproxy:2.8.1-bullseye
+    command:
+      - /bin/bash
+      - -c
+      - |
+        CONF_FILE=haproxy.cfg
+          
+          cat > $$CONF_FILE << EOF
+        global
+         log stdout format raw local0
+        defaults rediscluster
+        mode tcp
+        timeout connect  4s
+        timeout server  30s
+        timeout client  30s
+
+        frontend frontend_redis
+          bind :7380 name redis
+          default_backend backend_redis
+
+        backend backend_redis
+              option tcp-check
+                    tcp-check send "auth ${REDIS_INTEL_PASS}"\r\n
+                    tcp-check expect string +OK
+                    tcp-check send info\ replication\r\n
+                    tcp-check expect string role:master
+                    tcp-check send QUIT\r\n
+              tcp-check expect string +OK
+        EOF
+        echo " server ${CLUSTER_NODE_HOST} ${CLUSTER_NODE_IP}:6380 check inter 3s  fall 3  rise 21" >> $$CONF_FILE
+        peers="${CLUSTER_NODE_PEERS}"
+        for line in $$peers;do
+          
+          host=$$(echo $$line|cut -d'/' -f1);
+          ip=$$(echo $$line|cut -d'/' -f3);
+          
+          if [ ! -z $$host ] && [ ! -z $$ip ];then
+          echo " server $$host $$ip:6380 check inter 3s  fall 3  rise 21" >> $$CONF_FILE
+          fi
+
+        done
+
+        redis_master="${CLUSTER_NODE_PEERS}"
+        ferrum_cloud_id="${FERRUM_CLOUD_ID}"
+        if [ -z "$$ferrum_cloud_id" ] || [ ! -z "$$redis_master" ];then
+         echo "starting redis-intel-ha"
+         haproxy  -f haproxy.cfg
+        else 
+          echo "no redis cluster, closing ha"
+        fi
+    restart: always
+    ports:
+      - ${CLUSTER_NODE_IP}:7380:7380
+      - ${CLUSTER_NODE_IPW}:7380:7380
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    depends_on:
+      - redis-intel
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  redis-local:
+    image: redis:7-bullseye
+    command:
+      - /bin/bash
+      - -c
+      - |
+        CONF_FILE=/data/redis.conf
+
+        cat > $$CONF_FILE << EOF
+        requirepass ${REDIS_LOCAL_PASS}
+        masterauth ${REDIS_LOCAL_PASS}
+        protected-mode yes
+        port 6381
+        daemonize no
+        tcp-backlog 511
+        timeout 0
+        tcp-keepalive 300
+        maxclients 100000
+        appendonly yes
+        dir /data
+        EOF
+
+
+        redis-server $$CONF_FILE
+    restart: always
+    ports:
+      - ${CLUSTER_NODE_IP}:6381:6381
+      - ${CLUSTER_NODE_IPW}:6381:6381
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    volumes:
+      - redis-local:/data
+    logging:
+      driver: local
+    profiles:
+      - master
+      - worker
+
+  es:
+    image: ${ES_IMAGE}
+    restart: always
+    environment:
+      - ES_JAVA_OPTS=-Xms128m -Xmx1g
+      - ELASTIC_PASSWORD=${ES_PASS}
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.ml.enabled=false
+      - network.host=0.0.0.0
+      - ROLES=${ROLES}
+      - ES_HOST=${ES_PROXY_HOST}
+      - ES_USER=${ES_USER}
+      - ES_PASS=${ES_PASS}
+      - FERRUM_CLOUD_ID=${FERRUM_CLOUD_ID}
+      - FERRUM_CLOUD_URL=${FERRUM_CLOUD_URL}
+      - FERRUM_CLOUD_TOKEN=${FERRUM_CLOUD_TOKEN}
+      - ES_MULTI_HOST=${ES_MULTI_HOST}
+      - ES_MULTI_USER=${ES_MULTI_USER}
+      - ES_MULTI_PASS=${ES_MULTI_PASS}
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        delay: 5s
+      placement:
+        constraints:
+          - Ferrum_Node=management
+    ports:
+      - ${CLUSTER_NODE_IP}:9200:9200
+      - ${CLUSTER_NODE_IPW}:9200:9200
+    mem_limit: 2073741824
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - ferrum
+    volumes:
+      - es:/usr/share/elasticsearch/data
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  es-ha:
+    image: haproxy:2.8.1-bullseye
+    command:
+      - /bin/bash
+      - -c
+      - |
+        CONF_FILE=haproxy.cfg
+          
+          cat > $$CONF_FILE << EOF
+        global
+         log stdout format raw local0
+        defaults escluster
+        mode tcp
+        timeout connect  4s
+        timeout server  30s
+        timeout client  30s
+
+        frontend frontend_es
+          bind :10200 name es
+          default_backend backend_es
+
+        backend backend_es
+        EOF
+
+        peers="${CLUSTER_ES_PEERS}"
+        if [ ! -z "$$peers" ];then
+          backup="";
+          for line in $$peers;do
+            host=$$(echo "$$line"|cut -d'/' -f1);
+            ip=$$(echo "$$line"|cut -d'/' -f2);
+            
+            if [ ! -z "$$host" ] && [ ! -z "$$ip" ];then
+              backup_str=""
+              if [ -z "$$backup" ];then
+                  backup_str="";
+              else
+                  backup_str="backup"
+              fi
+              backup="backup";
+              echo " server $$host $$ip:9200 check inter 3s  fall 20  rise 20 $$backup_str" >> $$CONF_FILE
+            fi
+
+          done
+        else
+        echo " server ${CLUSTER_NODE_HOST} ${CLUSTER_NODE_IP}:9200 check inter 3s  fall 20  rise 20 " >> $$CONF_FILE
+        fi
+
+        es_peers="${CLUSTER_ES_PEERS}"
+        if [ ! -z "$$es_peers" ];then
+         echo "starting es-ha"
+         haproxy  -f haproxy.cfg
+        else 
+          echo "no es cluster, closing ha"
+        fi
+    restart: always
+    ports:
+      - ${CLUSTER_NODE_IP}:10200:10200
+      - ${CLUSTER_NODE_IPW}:10200:10200
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    depends_on:
+      - es
+    logging:
+      driver: local
+    profiles:
+      - master
+  
+  ui:
+    image: "??PRIVATE_REGISTRY/ferrumgate/ui.portal:2.2.0"
+    restart: always
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  rest:
+    image: "??PRIVATE_REGISTRY/ferrumgate/rest.portal:2.2.0"
+    restart: always
+    ports:
+      - ${REST_HTTP_PORT}:8181
+      - ${REST_HTTPS_PORT}:8443
+    environment:
+      - PORT=8181
+      - REDIS_HOST=${REDIS_PROXY_HOST}
+      - REDIS_PASS=${REDIS_PASS}
+      - REDIS_LOCAL_HOST=${REDIS_LOCAL_HOST}
+      - REDIS_LOCAL_PASS=${REDIS_LOCAL_PASS}
+      - REDIS_INTEL_HOST=${REDIS_INTEL_PROXY_HOST}
+      - REDIS_INTEL_PASS=${REDIS_INTEL_PASS}
+      - BASE_RATE_LIMIT=25
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - ES_HOST=${ES_PROXY_HOST}
+      - ES_USER=${ES_USER}
+      - ES_PASS=${ES_PASS}
+      - ES_INTEL_HOST=${ES_PROXY_HOST}
+      - ES_INTEL_USER=${ES_INTEL_USER}
+      - ES_INTEL_PASS=${ES_INTEL_PASS}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NODE_ID=${NODE_ID}
+      - FERRUM_CLOUD_ID=${FERRUM_CLOUD_ID}
+      - FERRUM_CLOUD_URL=${FERRUM_CLOUD_URL}
+      - FERRUM_CLOUD_TOKEN=${FERRUM_CLOUD_TOKEN}
+      - FERRUM_CLOUD_IP=${FERRUM_CLOUD_IP}
+      - FERRUM_CLOUD_PORT=${FERRUM_CLOUD_PORT}
+      - CLUSTER_NODE_PUBLIC_KEY=${CLUSTER_NODE_PUBLIC_KEY}
+      - STATIC_FOLDER=/usr/src/app/web
+      - UI_HOST=ui:80
+      - SHARE_PRIVATE_FOLDER=/usr/local/share/ferrumgate/private
+      - SHARE_PUBLIC_FOLDER=/usr/local/share/ferrumgate/public
+    deploy:
+      restart_policy:
+        delay: 5s
+      mode: global
+    depends_on:
+      - redis-ha
+      - es-ha
+    networks:
+      - ferrum
+    volumes:
+      - ferrum:/var/lib/ferrumgate
+      - /usr/local/share/ferrumgate:/usr/local/share/ferrumgate
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  log:
+    image: "??PRIVATE_REGISTRY/ferrumgate/job.log:2.2.0"
+    restart: always
+    environment:
+      - REDIS_HOST=${REDIS_PROXY_HOST}
+      - REDIS_PASS=${REDIS_PASS}
+      - REDIS_LOCAL_HOST=${REDIS_LOCAL_HOST}
+      - REDIS_LOCAL_PASS=${REDIS_LOCAL_PASS}
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - ES_HOST=${ES_PROXY_HOST}
+      - ES_USER=${ES_USER}
+      - ES_PASS=${ES_PASS}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NODE_ID=${NODE_ID}
+      - MODULE_SYSLOG=true
+      - MODULE_AUDIT_TO_ES=false
+      - MODULE_ACTIVITY_TO_ES=false
+      - MODULE_DEVICE_TO_ES=false
+      - MODULE_ACTIVITY_SVC_PARSER=false
+      - FERRUM_CLOUD_ID=${FERRUM_CLOUD_ID}
+    ports:
+      - ${CLUSTER_NODE_IP}:9292:9292/udp
+      - ${CLUSTER_NODE_IP}:9292:9292/tcp
+      - ${CLUSTER_NODE_IPW}:9292:9292/udp
+      - ${CLUSTER_NODE_IPW}:9292:9292/tcp
+    deploy:
+      mode: replicated
+      replicas: ${LOG_REPLICAS}
+      endpoint_mode: vip
+      restart_policy:
+        delay: 5s
+    depends_on:
+      - redis-ha
+    networks:
+      - ferrum
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  log-parser:
+    image: "??PRIVATE_REGISTRY/ferrumgate/job.log:2.2.0"
+    restart: always
+    environment:
+      - REDIS_HOST=${REDIS_PROXY_HOST}
+      - REDIS_PASS=${REDIS_PASS}
+      - REDIS_LOCAL_HOST=${REDIS_LOCAL_HOST}
+      - REDIS_LOCAL_PASS=${REDIS_LOCAL_PASS}
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - ES_HOST=${ES_PROXY_HOST}
+      - ES_USER=${ES_USER}
+      - ES_PASS=${ES_PASS}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NODE_ID=${NODE_ID}
+      - MODULE_SYSLOG=false
+      - MODULE_AUDIT_TO_ES=true
+      - MODULE_ACTIVITY_TO_ES=true
+      - MODULE_DEVICE_TO_ES=true
+      - MODULE_ACTIVITY_SVC_PARSER=true
+      - FERRUM_CLOUD_ID=${FERRUM_CLOUD_ID}
+    deploy:
+      mode: replicated
+      replicas: ${LOG_PARSER_REPLICAS}
+      endpoint_mode: vip
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    depends_on:
+      - redis-ha
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  task:
+    image: "??PRIVATE_REGISTRY/ferrumgate/job.task:2.2.0"
+    restart: always
+    environment:
+      - REDIS_HOST=${REDIS_PROXY_HOST}
+      - REDIS_PASS=${REDIS_PASS}
+      - REDIS_LOCAL_HOST=${REDIS_LOCAL_HOST}
+      - REDIS_LOCAL_PASS=${REDIS_LOCAL_PASS}
+      - REDIS_INTEL_HOST=${REDIS_INTEL_PROXY_HOST}
+      - REDIS_INTEL_PASS=${REDIS_INTEL_PASS}
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - ES_HOST=${ES_PROXY_HOST}
+      - ES_USER=${ES_USER}
+      - ES_PASS=${ES_PASS}
+      - ES_INTEL_HOST=${ES_PROXY_HOST}
+      - ES_INTEL_USER=${ES_INTEL_USER}
+      - ES_INTEL_PASS=${ES_INTEL_PASS}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NODE_ID=${NODE_ID}
+      - MODULE_IP_INTELLIGENCE=true
+      - MODULE_FQDN_INTELLIGENCE=true
+      - FERRUM_CLOUD_ID=${FERRUM_CLOUD_ID}
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    depends_on:
+      - redis-ha
+    logging:
+      driver: local
+    profiles:
+      - master
+
+  node:
+    image: "??PRIVATE_REGISTRY/ferrumgate/job.task:2.2.0"
+    restart: always
+    environment:
+      - ROLES=${ROLES}
+      - REDIS_HOST=${REDIS_PROXY_HOST}
+      - REDIS_PASS=${REDIS_PASS}
+      - REDIS_LOCAL_HOST=${REDIS_LOCAL_HOST}
+      - REDIS_LOCAL_PASS=${REDIS_LOCAL_PASS}
+      - REDIS_INTEL_HOST=${REDIS_INTEL_PROXY_HOST}
+      - REDIS_INTEL_PASS=${REDIS_INTEL_PASS}
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - ES_HOST=${ES_PROXY_HOST}
+      - ES_USER=${ES_USER}
+      - ES_PASS=${ES_PASS}
+      - ES_INTEL_HOST=${ES_PROXY_HOST}
+      - ES_INTEL_USER=${ES_INTEL_USER}
+      - ES_INTEL_PASS=${ES_INTEL_PASS}
+      - NODE_ID=${NODE_ID}
+      - VERSION=${VERSION}
+      - CLUSTER_NODE_HOST=${CLUSTER_NODE_HOST}
+      - CLUSTER_NODE_IP=${CLUSTER_NODE_IP}
+      - CLUSTER_NODE_PORT=${CLUSTER_NODE_PORT}
+      - CLUSTER_NODE_IPW=${CLUSTER_NODE_IPW}
+      - CLUSTER_NODE_PORTW=${CLUSTER_NODE_PORTW}
+      - CLUSTER_NODE_PUBLIC_KEY=${CLUSTER_NODE_PUBLIC_KEY}
+      - FERRUM_CLOUD_ID=${FERRUM_CLOUD_ID}
+      - FERRUM_CLOUD_URL=${FERRUM_CLOUD_URL}
+      - FERRUM_CLOUD_TOKEN=${FERRUM_CLOUD_TOKEN}
+      - MODULE_NODE=true
+    extra_hosts:
+      - "registry.ferrumgate.zero:192.168.88.40"
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 5s
+    networks:
+      - ferrum
+    depends_on: # ferrumgate.sh will add and remove them
+      - redis-ha
+    logging:
+      driver: local
+    profiles:
+      - master
+      - worker
