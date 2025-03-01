@@ -1,0 +1,47 @@
+{
+  "name": "secure.es.proxy",
+  "version": "1.0.0",
+  "description": "elastic search proxy for ferrumgate",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_ENV=development POLICY_DB_FOLDER=/tmp/abc  DEBUG2=nock.* node ./node_modules/mocha/bin/mocha --exit --timeout 30000 --require ts-node/register test/**/**.spec.ts",
+    "testintegration": "DEBUG=nock.* node ./node_modules/mocha/bin/mocha --exit  --require ts-node/register test/**/*.spec.integration.ts",
+    "build": "tsc ",
+    "start": "tsc && NODE_ENV=development  ES_HOST=localhost:9200  ES_USER=test  ES_PASS=123 ES_MULTI_HOST=https://192.168.88.250:9200 FERRUM_CLOUD_ID=1234 ES_MULTI_USER=elastic ES_MULTI_PASS=123456  node ./build/src/main.js",
+    "startdocker": "node ./build/src/main.js",
+    "startprod": "REDIS_HOST=192.168.88.10 node ./src/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/ferrumgate/secure.es.proxy.git"
+  },
+  "publishConfig": {
+    "tag": "rest.portal@2.0.0"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/ferrumgate/secure.es.proxy/issues"
+  },
+  "homepage": "https://gitlab.com/ferrumgate/secure.es.proxy#readme",
+  "dependencies": {
+    "@types/http-proxy": "^1.17.14",
+    "http-proxy": "^1.18.1",
+    "log4js": "^6.9.1"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.14",
+    "@types/chai-spies": "^1.0.6",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.30",
+    "@types/set-interval-async": "^1.0.3",
+    "axios-mock-adapter": "^1.22.0",
+    "chai": "^4.3.7",
+    "chai-http": "^4.4.0",
+    "chai-spies": "^1.1.0",
+    "mocha": "^10.3.0",
+    "nock": "^13.5.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^4.9.5"
+  }
+}
