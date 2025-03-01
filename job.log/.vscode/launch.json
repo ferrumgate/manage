@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "linux": {},
+            "name": "Launch Program",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "cwd": "${workspaceFolder}/build",
+            "program": "${workspaceFolder}/build/src/main.js",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "env": {
+                "REDIS_HOST": "localhost:6379",
+                "ENCRYPT_KEY": "nf0jd52ptlxdvkp1sd9c3n3foy80uog9",
+                "MODULE_ACTIVITY_TO_ES": "true"
+            },
+            "outputCapture": "console",
+            "preLaunchTask": "build"
+        }
+    ]
+}
