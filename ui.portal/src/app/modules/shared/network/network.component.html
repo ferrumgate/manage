@@ -1,0 +1,127 @@
+<div class="network">
+    <mat-card>
+        <mat-card-header>
+            <mat-card-title matTooltip="{{'Network'|translate}} {{network.name}}">
+                <mat-icon>lan
+                </mat-icon>
+            </mat-card-title>
+
+            <mat-action-row class="network-header-actions" fxFlex fxLayoutAlign="end center">
+                <button matSuffix mat-icon-button (click)="copyNetworkId()" [disabled]="!network.id">
+                    <mat-icon matSuffix matTooltip="{{'Copy'|translate}}">{{'file_copy'}}</mat-icon>
+                </button>
+                <button style="padding-right:10px" mat-icon-button matTooltip="{{'Help'|translate}}"
+                    (click)="openHelp()">
+                    <mat-icon>help_outline</mat-icon>
+                </button>
+                <mat-icon matBadge="{{gatewaysCount}}" class="stretch-badge" matBadgeColor="warn"
+                    matTooltip="{{'Gateways'|translate}}">
+                    computer
+                </mat-icon>
+                <button [disabled]="!gatewaysCount" mat-icon-button (click)="openGatewayClicked()">
+                    <mat-icon *ngIf="!network.isGatewayOpened">arrow_right</mat-icon>
+                    <mat-icon *ngIf="network.isGatewayOpened">arrow_left</mat-icon>
+                </button>
+            </mat-action-row>
+
+        </mat-card-header>
+
+        <mat-card-content>
+            <div>
+                <div>
+                    <form test-id="network-form" [formGroup]="formGroup">
+                        <p>
+                            <mat-form-field fxFlex appearance="fill">
+                                <mat-label>{{"Name"|translate}}</mat-label>
+                                <input matInput test-id="network-name-input" placeholder="{{'NetworkName'|translate}}"
+                                    formControlName="name" required>
+                                <mat-error>{{formError.name|translate}}</mat-error>
+                            </mat-form-field>
+                        </p>
+                        <p>
+                            <mat-form-field fxFlex appearance="fill">
+                                <mat-label>{{"Labels"|translate}}</mat-label>
+                                <mat-chip-list #chipList>
+                                    <mat-chip test-id="network-label-chip" *ngFor="let label of network.labels||[]"
+                                        (removed)="removeLabel(label)">
+                                        {{label}}
+                                        <button matChipRemove>
+                                            <mat-icon>cancel</mat-icon>
+                                        </button>
+                                    </mat-chip>
+                                    <input placeholder="{{'NewLabel' | translate}}" [matChipInputFor]="chipList"
+                                        [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                                        [matChipInputAddOnBlur]="addOnBlur" (matChipInputTokenEnd)="addLabel($event)">
+                                </mat-chip-list>
+                            </mat-form-field>
+                        </p>
+                        <p>
+                            <mat-form-field fxFlex appearance="fill">
+                                <mat-label>{{"ClientIpRange"|translate}}</mat-label>
+                                <input matInput test-id="network-clientnetwork-input" placeholder="100.64.0.0/16"
+                                    formControlName="clientNetwork" required>
+                                <mat-hint>{{"ClientNetworkDefinition"|translate}}
+                                </mat-hint>
+                                <mat-error>{{formError.clientNetwork|translate}}</mat-error>
+                            </mat-form-field>
+                        </p>
+                        <p>
+                            <mat-form-field fxFlex appearance="fill">
+                                <mat-label>{{"ServiceIpRange"|translate}}</mat-label>
+                                <input matInput test-id="network-servicenetwork-input" placeholder="172.28.28.0/24"
+                                    formControlName="serviceNetwork" required>
+                                <mat-hint>{{"ServiceNetworkDefinition"|translate}}</mat-hint>
+
+                                <mat-error>{{formError.serviceNetwork|translate}}</mat-error>
+
+                            </mat-form-field>
+                        </p>
+                        <p>
+                            <mat-form-field fxFlex appearance="fill">
+                                <mat-label>{{"SshHost"|translate}}</mat-label>
+                                <input matInput test-id="network-sshhost-input" placeholder="tunnel.ferrumgate.com:9999"
+                                    formControlName="sshHost" required>
+                                <mat-hint>{{"SshHostDefinition"|translate}}</mat-hint>
+
+                                <mat-error>{{formError.serviceNetwork|translate}}</mat-error>
+
+                            </mat-form-field>
+                        </p>
+                        <p>
+                            <mat-checkbox test-id="network-checkbox-enabled" [(ngModel)]="network.isEnabled"
+                                (ngModelChange)="networkModelChanged()" [ngModelOptions]="{standalone:true}">
+                                {{"Enabled"|translate}}</mat-checkbox>
+                        </p>
+
+                    </form>
+                </div>
+
+                <div>
+                    <mat-divider></mat-divider>
+                    <mat-toolbar style="height:35px">
+                        <mat-action-row class="network-actions" fxFlex fxLayoutAlign="start center">
+                            <button mat-icon-button color="primary" matTooltip="{{'Delete'|translate}}"
+                                (click)="delete()">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                            <span *ngIf="network.isChanged" fxFlex fxLayoutAlign="end center">
+                                <button mat-icon-button color="warn" matTooltip="{{'CancelChanges'|translate}}"
+                                    (click)="clear()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                                <button test-id="network-ok-button" mat-icon-button color="warn"
+                                    matTooltip="{{'SaveChanges'|translate}}" (click)="saveOrUpdate()">
+                                    <mat-icon>check</mat-icon>
+                                </button>
+                            </span>
+
+
+                        </mat-action-row>
+                    </mat-toolbar>
+
+
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

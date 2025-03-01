@@ -1,0 +1,73 @@
+<div class="networks-container" [ngClass]="isThemeDark?'theme-dark':''">
+    <div class="networks networks-toolbar">
+        <div fxFlex fxLayout="column">
+            <div class="row title">
+                <span matBadge="{{networks.length}}" class="stretch-badge"
+                    matBadgeOverlap="false">{{'Networks'|translate}}</span>
+
+            </div>
+            <div class="row" fxLayout="row">
+                <mat-form-field fxFlex>
+                    <input matInput placeholder="{{'Search'|translate}}" [formControl]="searchForm" />
+                    <mat-hint>{{"NetworksSearchHint"|translate}}</mat-hint>
+                </mat-form-field>
+                <div fxLayoutAlign="center center">
+                    <button mat-raised-button color="primary" class="add" (click)="addNewNetwork()">
+                        <mat-icon>add</mat-icon>
+                        {{"Add"|translate}}
+                    </button>
+                </div>
+            </div>
+            <mat-divider></mat-divider>
+        </div>
+    </div>
+    <div class="networks networks-content">
+        <mat-accordion test-id="networks-gatewaynotjoined-accordion" *ngIf="gatewaysNotJoined.length">
+            <mat-expansion-panel [expanded]="gatewaysNotJoinedpanelOpenState">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>
+                        {{"NotJoinedGateways"|translate}}
+                    </mat-panel-title>
+
+                </mat-expansion-panel-header>
+
+                <div class="row network-item" fxLayout="column">
+                    <div class="network-item" fxLayout="row wrap">
+                        <app-gateway test-id="networks-gatewaynotjoined-app-gateway" [nodes]="nodes"
+                            [networks]="networks" [gateway]="gate" (saveGateway)="saveGateway($event)"
+                            (deleteGateway)="deleteGateway($event)" *ngFor="let gate of gatewaysNotJoined">
+                        </app-gateway>
+                    </div>
+                </div>
+
+            </mat-expansion-panel>
+        </mat-accordion>
+        <mat-divider *ngIf="gatewaysNotJoined.length" class="content-divider"></mat-divider>
+        <div fxLayout="row wrap">
+            <p class="row network-item" fxLayout="row" *ngFor="let net of networks">
+
+                <app-network test-id="networks-app-network" [network]="net" [gatewaysCount]="net.gatewaysCount"
+                    (deleteNetwork)="deleteNetwork($event)" (saveNetwork)="saveNetwork($event)"
+                    (openGateways)="net.isGatewayOpened=$event">
+
+                </app-network>
+                <span class="network-gateways" *ngIf="net.isGatewayOpened">
+                    <mat-card>
+                        <mat-card-header>
+                            <mat-label class="gateway-title">{{'Gateways'|translate}}</mat-label>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <div class="gateway-item" fxFlex fxLayout="row wrap">
+                                <app-gateway test-id="networks-app-network-app-gateway" [nodes]="nodes"
+                                    [networks]="networks" [gateway]="gate" *ngFor="let gate of filterGateways(net)"
+                                    (saveGateway)=" saveGateway($event)" (deleteGateway)="deleteGateway($event)">
+                                </app-gateway>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </span>
+            </p>
+        </div>
+
+    </div>
+</div>

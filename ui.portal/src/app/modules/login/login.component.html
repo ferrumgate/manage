@@ -1,0 +1,161 @@
+<div class="login" fxLayout="column" fxLayoutAlign="center center">
+    <div fxLayout="row" class="login-container">
+        <mat-card class="login-mat-card">
+
+            <mat-card-content>
+                <img mat-card-md-image src="/assets/img/logo-white.svg" *ngIf="isThemeDark && !this.brand.logoWhiteUrl">
+                <img mat-card-md-image src="/assets/img/logo-black.svg"
+                    *ngIf="!isThemeDark && !this.brand.logoBlackUrl">
+                <img mat-card-md-image [src]="this.brand.logoWhiteUrl" *ngIf="isThemeDark && this.brand.logoWhiteUrl">
+                <img mat-card-md-image [src]="this.brand.logoBlackUrl" *ngIf="!isThemeDark && this.brand.logoBlackUrl">
+                <div>
+                    {{this.brand.name || "FerrumGate"}}
+                </div>
+
+
+                <div class="login-subtitle">
+                    Zero Trust Access
+                </div>
+
+            </mat-card-content>
+        </mat-card>
+        <mat-card fxLayout="column" fxLayoutAlign="center center" class="login-mat-card">
+            <mat-card-title class="login-title">{{"SignIn"|translate}}</mat-card-title>
+            <mat-card-content>
+                <form test-id="login-form" [formGroup]="form" (ngSubmit)="submit()">
+                    <p>
+                        <mat-form-field class="login-form-field">
+                            <input type="text" test-id="login-email-input" matInput
+                                placeholder="{{'EmailOrUsername'|translate}}" formControlName="email">
+                            <mat-error test-id="login-email-error" class="login-error"> {{ error.email |translate
+                                }}
+                            </mat-error>
+                        </mat-form-field>
+
+                    </p>
+
+                    <p>
+                        <mat-form-field class="login-form-field">
+                            <input [type]="hidePassword?'password':'text'" test-id="login-password-input" matInput
+                                placeholder="{{'Password'|translate}}" formControlName="password">
+                            <mat-icon matSuffix style="cursor: pointer;"
+                                (click)="hidePassword = !hidePassword">{{hidePassword ?
+                                'visibility_off' : 'visibility'}}</mat-icon>
+                            <mat-error test-id="login-password-error" class="login-error"> {{ error.password
+                                |translate}}</mat-error>
+                        </mat-form-field>
+                    </p>
+
+                    <div>
+
+                        <mat-error class="login-error" matTooltip="{{error.login|translate}}"> {{ error.login|translate
+                            }}</mat-error>
+                    </div>
+
+                    <div class="button login-signin" fxLayout="row" fxLayoutAlign="center">
+                        <button test-id="login-submit-button" type="submit" mat-raised-button
+                            [disabled]="!form.valid">{{"SignIn"|translate}}</button>
+                    </div>
+                    <div class="login-forgotpassword" *ngIf="isForgotPasswordEnabled" fxLayout="row"
+                        fxLayoutAlign="end">
+                        <span> <a mat-flat-button href="/user/forgotpass"
+                                target="_self">{{"ForgotPassword"|translate}}?</a></span>
+                    </div>
+                    <div class="login-register" *ngIf="isRegisterEnabled" fxLayout="row" fxLayoutAlign="end">
+                        <span><a mat-flat-button href="/register"
+                                target="_self">{{"DontHaveAnAccount"|translate}}?</a></span>
+                    </div>
+
+
+                </form>
+            </mat-card-content>
+        </mat-card>
+
+
+    </div>
+
+    <div test-id="login-others" *ngIf="isOthersEnabled" fxLayout="row" fxLayoutAlign="center center"
+        class="login-container">
+        <mat-card>
+            <mat-card-content *ngIf="isOthersEnabled">
+                <div *ngIf="isOthersEnabled" fxLayout="row" fxLayoutAlign="center center" fxFill>
+                    <mat-label>
+                        OR
+                    </mat-label>
+                    <mat-divider></mat-divider>
+                </div>
+                <div fxLayout="row" fxLayoutAlign="center center">
+
+                    <div *ngIf="isOAuthGoogleEnabled" class="social">
+                        <a href="{{oAuthGoogleAuthenticateUrl}}" mat-icon-button aria-label="google authentication"
+                            matTooltip="Sign in with Google" matTooltipShowDelay="100" matTooltipHideDelay="200">
+
+                            <mat-icon svgIcon="social-google"></mat-icon>
+                        </a>
+                    </div>
+                    <div *ngIf="isGithubEnabled" class="social">
+                        <button mat-icon-button aria-label="github authentication" matTooltip="Sign in with Github"
+                            matTooltipShowDelay="100" matTooltipHideDelay="200">
+                            <mat-icon svgIcon="social-github"></mat-icon>
+                        </button>
+                    </div>
+                    <div *ngIf="isOAuthLinkedInEnabled" class="social">
+                        <a href="{{oAuthLinkedinAuthenticateUrl}}" mat-icon-button aria-label="linkedin authentication"
+                            matTooltip="Sign in with Linkedin" matTooltipShowDelay="100" matTooltipHideDelay="200">
+
+                            <mat-icon svgIcon="social-linkedin"></mat-icon>
+                        </a>
+
+                    </div>
+                    <div *ngIf="isMicrosoftEnabled" class="social">
+                        <button mat-icon-button aria-label="microsoft authenticaton" matTooltip="Sign in with Microsoft"
+                            matTooltipShowDelay="100" matTooltipHideDelay="200">
+                            <mat-icon svgIcon="social-microsoft"></mat-icon>
+                        </button>
+                    </div>
+                    <div *ngIf="isSamlAuth0Enabled" class="social">
+                        <a href="{{samlAuth0AuthenticateUrl}}" mat-icon-button aria-label="auth0 authentication"
+                            matTooltip="Sign in with Auth0" matTooltipShowDelay="100" matTooltipHideDelay="200">
+
+                            <mat-icon svgIcon="social-auth0"></mat-icon>
+                        </a>
+                    </div>
+                    <div *ngIf="isSamlAzureADEnabled" class="social">
+                        <a href="{{samlAzureADAuthenticateUrl}}" mat-icon-button aria-label="azuread authentication"
+                            matTooltip="Sign in with Azure AD" matTooltipShowDelay="100" matTooltipHideDelay="200">
+
+                            <mat-icon svgIcon="social-azure"></mat-icon>
+                        </a>
+                    </div>
+                    <div *ngFor="let openid of openIds" class="social">
+                        <a href="{{getOpenIdAuthenticateUrl(openid)}}" mat-icon-button
+                            aria-label="openid authentication" matTooltip={{loginMessage(openid)}}
+                            matTooltipShowDelay="100" matTooltipHideDelay="200">
+
+                            <mat-icon svgIcon="{{loginIcon(openid,'social-openid')}}"></mat-icon>
+                        </a>
+                    </div>
+                    <div *ngFor="let oauth of oAuths" class="social">
+                        <a href="{{getOAuthAuthenticateUrl(oauth)}}" mat-icon-button aria-label="oauth authentication"
+                            matTooltip={{loginMessage(oauth)}} matTooltipShowDelay="100" matTooltipHideDelay="200">
+
+                            <mat-icon svgIcon="{{loginIcon(oauth,'social-oauth2')}}"></mat-icon>
+                        </a>
+                    </div>
+                    <div *ngFor="let saml of samls" class="social">
+                        <a href="{{getSamlAuthenticateUrl(saml)}}" mat-icon-button aria-label="saml authentication"
+                            matTooltip={{loginMessage(saml)}} matTooltipShowDelay="100" matTooltipHideDelay="200">
+
+                            <mat-icon svgIcon="{{loginIcon(saml,'social-saml')}}"></mat-icon>
+                        </a>
+                    </div>
+                </div>
+
+
+            </mat-card-content>
+        </mat-card>
+
+    </div>
+
+
+</div>

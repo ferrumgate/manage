@@ -1,0 +1,50 @@
+<div class="config-dns-container">
+    <div class="config-dns config-dns-toolbar">
+        <div fxFlex fxLayout="column">
+            <div class="row title">
+                <span matBadge="{{records.length}}" class="stretch-badge"
+                    matBadgeOverlap="false">{{'Dns'|translate}}</span>
+
+            </div>
+
+            <div class="row" fxLayout="row">
+                <mat-form-field fxFlex>
+                    <input matInput placeholder="{{'Search'|translate}}" [formControl]="searchForm" />
+                    <mat-hint>{{"DnsSearchHint"|translate}}</mat-hint>
+                </mat-form-field>
+                <div fxLayoutAlign="center center">
+                    <button mat-raised-button color="primary" class="add" [matMenuTriggerFor]="menu">
+                        {{"Add"|translate}}
+                        <mat-icon>keyboard_arrow_down</mat-icon>
+                    </button>
+                    <mat-menu #menu="matMenu">
+                        <button mat-menu-item (click)="addNewRecord()">
+                            <!-- <mat-icon>a</mat-icon> -->
+                            <mat-label class="dns-record-icon">a</mat-label>
+                            <span>{{"ARecord"|translate}}</span>
+                        </button>
+
+                    </mat-menu>
+                </div>
+            </div>
+            <mat-divider></mat-divider>
+        </div>
+    </div>
+
+    <div class="config-dns config-dns-content">
+        <div class="dns-users-paginator" fxLayoutAlign="end center">
+            <mat-paginator [length]="totalRecords" [pageSize]="pageSize" [pageSizeOptions]="[1,5, 10, 25, 100]"
+                aria-label="Select page" (page)="pageChanged($event)" size>
+            </mat-paginator>
+        </div>
+        <div fxLayout="row wrap">
+            <p class="row services-item" fxLayout="row" *ngFor="let record of records">
+
+                <app-dns-record test-id="config-dns-item" [dnsRecord]="record" (saveDnsRecord)="saveDnsRecord($event)"
+                    (deleteDnsRecord)="deleteDnsRecord($event)">
+                </app-dns-record>
+
+            </p>
+        </div>
+    </div>
+</div>
