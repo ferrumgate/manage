@@ -1,0 +1,80 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "cwd": "${workspaceFolder}/build",
+            "program": "${workspaceFolder}/build/src/index.js",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "env": {
+                "NODE_ENV": "development",
+                "PORT": "8181",
+                "REDIS_HOST": "localhost:6379",
+                "REDIS_LOCAL_HOST": "localhost:6379",
+                "REDIS_INTEL_HOST": "localhost:6379",
+                "ES_HOST": "http://localhost:9200",
+                "ES_USER": "elastic",
+                "ES_PASS": "123456",
+                "GATEWAY_ID": "12edf",
+                "LOAD_TEST_DATA": "true2",
+                "JENCODE": "json",
+                "ENCRYPT_KEY": "bwe7ecxv6pgsc1vbzwh507ey6bftxc41",
+                "UI_HOST": "localhost:4200",
+                "LETS_ENCRYPT_SERVER": "https://localhost:14000/dir",
+                "TRY_MODE2": "true",
+                "FERRUM_TRY_URL": "https://hamza.com",
+                "FERRUM_TRY_TUNNEL_SERVER": "tunnelserver.com:1234",
+                "FERRUM_TRY_ADMIN_PASS": "123456",
+                "FERRUM_TRY_USER1_PASS": "123456",
+                "SERVICE_VALID_RANGES2": "10.10.10.0/24 192.168.88.0/24",
+                "FERRUM_CLOUD_URL": "https://ferrumcloud.com",
+                "FERRUM_CLOUD_ID": "123456",
+                "FERRUM_CLOUD_TOKEN": "123456",
+                "FERRUM_CLOUD_IP": "192.168.88.51",
+                "FERRUM_CLOUD_PORT": "54320"
+            },
+            "outputCapture": "console",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Test Env",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "cwd": "${workspaceFolder}/build",
+            "program": "${workspaceFolder}/build/src/index.js",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "env": {
+                "NODE_ENV": "development",
+                "PORT": "8181",
+                "REDIS_HOST": "localhost:6379",
+                "REDIS_PASS": "1dpkz8g8xg6e8tfz3tv1usddjhcu1m81pjcp2ai9je08zlop73t64eis6y0thxlv",
+                "REDIS_LOCAL_HOST": "localhost:6379",
+                "REDIS_LOCAL_PASS": "1dpkz8g8xg6e8tfz3tv1usddjhcu1m81pjcp2ai9je08zlop73t64eis6y0thxlv",
+                "ES_HOST": "http://localhost:9200",
+                "ES_USER": "elastic",
+                "ES_PASS": "ux4eyrkbr47z6sckyf9zmavvgzxgvrzebsh082dumfk59j3b5ti9fvy95s7sybmx",
+                "GATEWAY_ID": "4s6ro4xte8009p96",
+                "LIMITED_MODE": "true",
+            },
+            "outputCapture": "console",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build"
+        }
+    ]
+}

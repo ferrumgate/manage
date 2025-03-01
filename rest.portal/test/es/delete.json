@@ -1,0 +1,47 @@
+{
+    "size": 0,
+    "query": {
+        "bool": {
+            "must": [
+                {
+                    "range": {
+                        "insertDate": {
+                            "gte": "2022-11-27T00:00:00.000Z",
+                            "lt": "2022-12-04T22:53:58.954Z"
+                        }
+                    }
+                },
+                {
+                    "term": {
+                        "type": "login try"
+                    }
+                },
+                {
+                    "term": {
+                        "status": 200
+                    }
+                }
+            ],
+            "must_not": []
+        }
+    },
+    "aggs": {
+        "username": {
+            "sum": {
+                "field": "username"
+            }
+        },
+        "username_sort": {
+            "bucket_sort": {
+                "sort": [
+                    {
+                        "username": {
+                            "order": "desc"
+                        }
+                    }
+                ],
+                "size": 10
+            }
+        }
+    }
+}
