@@ -283,12 +283,9 @@ describe('redisService', () => {
 
         const simpleRedis = new RedisService('localhost:6379');
 
-        let obj = { ttl: 10 };
-        let isDataReceived = false;
-        const channel = Util.randomNumberString();
         await simpleRedis.set('/test/deneme', 'obs');
         await simpleRedis.set('/test/deneme2', 'obs');
-        let pos = '';
+        let pos = '0';
         const [cursor, results] = await simpleRedis.scan('/test/*', pos);
         expect(cursor).exist;
         expect(cursor).to.equal('0');
