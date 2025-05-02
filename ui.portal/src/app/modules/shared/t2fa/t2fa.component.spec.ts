@@ -12,6 +12,12 @@ import { NotificationService } from '../services/notification.service';
 import { TranslationService } from '../services/translation.service';
 import { SharedModule } from '../shared.module';
 import { T2FAComponent } from './t2fa.component';
+import { AuthenticationService } from '../services/authentication.service';
+import { Idle } from '@ng-idle/core';
+import { Keepalive } from '@ng-idle/keepalive';
+import { on } from 'events';
+import { interval } from 'rxjs';
+import { start } from 'repl';
 
 describe('T2FAComponent', () => {
   let component: T2FAComponent;
@@ -24,6 +30,7 @@ describe('T2FAComponent', () => {
         NoopAnimationsModule, SharedModule, RecaptchaV3Module, MatIconTestingModule, RouterTestingModule.withRoutes([])],
       providers: [
         ConfigService,
+        AuthenticationService,
         TranslationService, NotificationService,
         CaptchaService,
         GroupService,
@@ -31,7 +38,36 @@ describe('T2FAComponent', () => {
         {
           provide: RECAPTCHA_V3_SITE_KEY,
           useValue: '',
+        },
+        {
+          provide: Idle,
+          useValue: {
+            isRunning: () => false,
+            setIdle: () => { },
+            setTimeout: () => { },
+            setInterrupts: () => { },
+            onTimeout: {
+              subscribe: () => { }
+            },
+            watch: () => { },
+          }, // Mock implementation of Idle
 
+        },
+        {
+          provide: Keepalive,
+          useValue: {
+            isRunning: () => false,
+            setIdle: () => { },
+
+            onTimeout: {
+              subscribe: () => { }
+            },
+            interval: () => { },
+            onPing: {
+              subscribe: () => { }
+            },
+            start: () => { },
+          }
         }
       ]
     })
