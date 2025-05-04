@@ -4,18 +4,22 @@ export interface ServicePort {
     isTcp?: boolean;
     isUdp?: boolean;
     protocol?: string;
+    // if service is tproxy, there should be a port range
+    portRangeStart?:number;
+    portRangeEnd?:number;
     [key: string]: any;
 
 }
+
 export interface ServiceHost {
     host: string;
     [key: string]: any;
 
 }
+
 export interface ServiceAlias {
     host: string;
 }
-
 
 /**
  * private network service definition like
@@ -27,7 +31,7 @@ export interface Service {
     labels?: string[];
     //listen ports
     ports: ServicePort[];
-    protocol?: 'dns' | 'raw' | string;
+    protocol?: 'dns' | 'raw' | 'tproxy'|string;
     //upstream hosts and rules
     hosts: ServiceHost[];
     count: number;

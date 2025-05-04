@@ -132,8 +132,14 @@ routerServiceAuthenticated.put('/',
 
         input.name = input.name || 'service';
         input.labels = input.labels || [];
-        if (!input.ports.some(x => x.port && (x.isTcp || x.isUdp))) {
-            throw new RestfullException(400, ErrorCodes.ErrBadArgument, ErrorCodes.ErrBadArgument, 'input port is invalid');
+        if (input.protocol == 'tproxy') {
+            if (!input.ports.some(x => x.portRangeStart && x.portRangeEnd && (x.isTcp || x.isUdp))) {
+                throw new RestfullException(400, ErrorCodes.ErrBadArgument, ErrorCodes.ErrBadArgument, 'input port range is invalid');
+            }
+        } else {
+            if (!input.ports.some(x => x.port && (x.isTcp || x.isUdp))) {
+                throw new RestfullException(400, ErrorCodes.ErrBadArgument, ErrorCodes.ErrBadArgument, 'input port is invalid');
+            }
         }
         if (!input.hosts.some(x => x.host)) {
             throw new RestfullException(400, ErrorCodes.ErrBadArgument, ErrorCodes.ErrBadArgument, 'input host is invalid');
@@ -212,8 +218,14 @@ routerServiceAuthenticated.post('/',
 
         input.name = input.name || 'service';
         input.labels = input.labels || [];
-        if (!input.ports.some(x => x.port && (x.isTcp || x.isUdp))) {
-            throw new RestfullException(400, ErrorCodes.ErrBadArgument, ErrorCodes.ErrBadArgument, 'input port is invalid');
+        if (input.protocol == 'tproxy') {
+            if (!input.ports.some(x => x.portRangeStart && x.portRangeEnd && (x.isTcp || x.isUdp))) {
+                throw new RestfullException(400, ErrorCodes.ErrBadArgument, ErrorCodes.ErrBadArgument, 'input port range is invalid');
+            }
+        } else {
+            if (!input.ports.some(x => x.port && (x.isTcp || x.isUdp))) {
+                throw new RestfullException(400, ErrorCodes.ErrBadArgument, ErrorCodes.ErrBadArgument, 'input port is invalid');
+            }
         }
         if (!input.hosts.some(x => x.host)) {
             throw new RestfullException(400, ErrorCodes.ErrBadArgument, ErrorCodes.ErrBadArgument, 'input host is invalid');

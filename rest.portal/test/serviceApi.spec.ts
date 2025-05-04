@@ -78,6 +78,22 @@ function createSampleData() {
         aliases: []
 
     }
+    let service4: Service = {
+        id: Util.randomNumberString(),
+        name: 'dns',
+        isEnabled: true,
+        labels: ['test'],
+        hosts: [{ host: '192.168.10.10' }],
+        networkId: 'network1',
+        ports: [{ port: 0, isUdp: true,portRangeStart: 100, portRangeEnd: 200 }],
+        protocol: 'tproxy',
+        assignedIp: '10.0.0.1',
+        insertDate: new Date().toISOString(),
+        updateDate: new Date().toISOString(),
+        count: 1,
+        aliases: []
+
+    }
     const user1: User = {
         username: 'hamza@ferrumgate.com',
         id: 'someid',
@@ -92,7 +108,7 @@ function createSampleData() {
 
     }
 
-    return { service1, service2, service3, user1, network };
+    return { service1, service2, service3, user1, network,service4 };
 }
 /**
  * authenticated service api
@@ -259,7 +275,7 @@ describe('serviceApi', async () => {
 
     it('PUT /service returns 200', async () => {
         //prepare data
-        const { service1, service2, service3, user1, network } = createSampleData();
+        const { service1, service2, service3, user1, network ,service4 } = createSampleData();
         await appService.configService.saveNetwork(network);
         await appService.configService.saveUser(user1);
         const session = await sessionService.createSession({ id: 'someid' } as User, false, '1.1.1.1', 'local');
@@ -267,6 +283,7 @@ describe('serviceApi', async () => {
 
         await appService.configService.saveService(service1);
         await appService.configService.saveService(service2);
+        await appService.configService.saveService(service4);
 
         service2.name = 'blabla'
         let response: any = await new Promise((resolve: any, reject: any) => {
@@ -289,11 +306,36 @@ describe('serviceApi', async () => {
         }
         expectToDeepEqual(itemDb, service2);
 
+        //check port range
+
+        service4.ports[0].portRangeStart = 1000;
+        service4.ports[0].portRangeEnd = 2000;
+        response = await new Promise((resolve: any, reject: any) => {
+            chai.request(app)
+                .put(`/api/service`)
+                .set(`Authorization`, `Bearer ${token}`)
+                .send(service4)
+                .end((err, res) => {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve(res);
+                });
+        })
+        expect(response.status).to.equal(200);
+        const itemDb4 = await appService.configService.getService(service4.id);
+        if (itemDb4) {
+            itemDb4.insertDate = service4.insertDate;
+            itemDb4.updateDate = service4.updateDate;
+        }
+        expectToDeepEqual(itemDb4, service4);
+
+
     }).timeout(50000);
 
     it('POST /service returns 200', async () => {
         //prepare data
-        const { service1, service2, service3, user1, network } = createSampleData();
+        const { service1, service2, service3, user1, network, service4 } = createSampleData();
         await appService.configService.saveNetwork(network);
         await appService.configService.saveUser(user1);
 
@@ -324,6 +366,31 @@ describe('serviceApi', async () => {
         service2.updateDate = response.body.updateDate;
 
         expectToDeepEqual(response.body, service2);
+        //check port range
+        service4.ports[0].portRangeStart = 1000;
+        service4.ports[0].portRangeEnd = 2000;
+        service4.id = '';
+        response = await new Promise((resolve: any, reject: any) => {
+            chai.request(app)
+                .post(`/api/service`)
+                .set(`Authorization`, `Bearer ${token}`)
+                .send(service4)
+                .end((err, res) => {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve(res);
+                });
+        })
+        expect(response.status).to.equal(200);
+
+        service4.id = response.body.id;
+        service4.assignedIp = response.body.assignedIp;
+        service4.insertDate = response.body.insertDate;
+        service4.updateDate = response.body.updateDate;
+
+        expectToDeepEqual(response.body, service4);
+
 
     }).timeout(50000);
 
