@@ -14,14 +14,39 @@ export class DockerService {
         return str.replace(/[^a-z0-9]/gi, '');
     }
 
+    getAssignedIp(svc: Service) {
+        if (svc.protocol != 'tproxy') {
+            return svc.assignedIp;
+        }
+        // if tproxy replace assigned ip 172.20.0.2 then replace with 127.20.0.2
+        return svc.assignedIp.split('.').map((x, i) => {
+            if (i == 0) {
+                return '127';
+            }
+            else {
+                return x;
+            }
+        }).join('.');
+
+    }
+
+    getAssignedPort(svc: Service, port: number) {
+        if (svc.protocol != 'tproxy') {
+            return port;
+        }
+        return 999;
+    }
+
+
+
     getEnv(svc: Service, port: number, isTcp?: boolean, isUdp?: boolean, rootFqdn?: string) {
 
 
-        let tcp = isTcp ? `-e RAW_DESTINATION_TCP_PORT=${port}` : '';
-        let udp = isUdp ? `-e RAW_DESTINATION_UDP_PORT=${port}` : '';
+        let tcp = isTcp ? `-e RAW_DESTINATION_TCP_PORT=${this.getAssignedPort(svc, port)}` : '';
+        let udp = isUdp ? `-e RAW_DESTINATION_UDP_PORT=${this.getAssignedPort(svc, port)}` : '';
 
-        let tcp_listen = isTcp ? `-e RAW_LISTEN_TCP_PORT=${port}` : '';
-        let udp_listen = isUdp ? `-e RAW_LISTEN_UDP_PORT=${port}` : '';
+        let tcp_listen = isTcp ? `-e RAW_LISTEN_TCP_PORT=${this.getAssignedPort(svc, port)}` : '';
+        let udp_listen = isUdp ? `-e RAW_LISTEN_UDP_PORT=${this.getAssignedPort(svc, port)}` : '';
         let redis_pass = process.env.REDIS_PASS ? `-e REDIS_PASS=${process.env.REDIS_PASS}` : ''
         let redis_intel_pass = process.env.REDIS_INTEL_PASS ? `-e REDIS_INTEL_PASS=${process.env.REDIS_INTEL_PASS}` : ''
         let db_folder = process.env.DB_FOLDER ? `-e DB_FOLDER=${process.env.DB_FOLDER}` : '';
@@ -36,7 +61,7 @@ ${redis_pass}
 ${redis_intel_pass}
 -e RAW_DESTINATION_HOST=${svc.hosts[0].host}
 ${tcp} ${udp}
--e RAW_LISTEN_IP=${svc.assignedIp}
+-e RAW_LISTEN_IP=${this.getAssignedIp(svc)}
 -e PROTOCOL_TYPE=${svc.protocol || 'raw'}
 -e SYSLOG_HOST=${process.env.SYSLOG_HOST || 'log:9292'}
 ${db_folder}
@@ -70,7 +95,7 @@ ${tcp_listen} ${udp_listen}
     }
     async ipAddr(svc: Service) {
         if (svc.assignedIp != '127.0.0.1')
-            await NetworkService.ipAddr('lo', svc.assignedIp);
+            await NetworkService.ipAddr('lo', this.getAssignedIp(svc));
     }
     getLabels(svc: Service, port: number, isTcp?: boolean, isUdp?: boolean, replicaNumber?: number, gatewayId?: string) {
         return `--label FerrumSvcLastUpdate=${svc.updateDate || ''} --label FerrumSvcId=${svc.id} --label FerrumSvcPort=${port} --label FerrumSvcIsTcp=${isTcp ? 'true' : 'false'} --label FerrumSvcIsUdp=${isUdp ? 'true' : 'false'} --label FerrumSvcReplica=${replicaNumber || 0} --label FerrumGatewayId=${gatewayId || 0}`
