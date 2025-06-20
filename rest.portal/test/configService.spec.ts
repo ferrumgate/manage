@@ -2376,7 +2376,7 @@ describe('configService', async () => {
         await configService.setExternalConfig({ ids: ['test'] });
         const result2 = await configService.getExternalConfig();
         expect(result2).exist;
-        expect(result2.ids?.at(0)).to.equal('123');
+        expect(result2.ids?.at(0)).to.equal('test');
 
         result2.ids?.push('12345');
         await configService.setExternalConfig(result2);

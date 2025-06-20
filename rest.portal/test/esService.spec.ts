@@ -519,6 +519,7 @@ describe.skip('esService ', async () => {
         expect(items.aggs.length > 6 * 24).to.be.true;
 
     }).timeout(120000);
+    
     it('reConfigure', async () => {
         const host = 'https://localhost:9500';
         const user = 'elastic';
@@ -699,6 +700,7 @@ describe.skip('esService ', async () => {
         expect(indexes.includes(`ip-intelligence-list-${list.id.toLowerCase()}`)).to.be.false;
 
     }).timeout(120000);
+    
 
     it('scrollIpIntelligenceList', async () => {
 

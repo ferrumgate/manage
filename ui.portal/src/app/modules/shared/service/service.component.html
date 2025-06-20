@@ -57,9 +57,13 @@
                                     </button>
 
                                     <mat-menu #menu="matMenu">
-                                        <button mat-menu-item (click)="addNewPort()">
+                                        <button mat-menu-item *ngIf="service.protocol!='tproxy'" (click)="addNewPort()">
                                             <mat-icon>short_text</mat-icon>
                                             <span>{{"Port"|translate}}</span>
+                                        </button>
+                                        <button mat-menu-item *ngIf="service.protocol=='tproxy'" (click)="addNewPort()">
+                                            <mat-icon>short_text</mat-icon>
+                                            <span>{{"PortRange"|translate}}</span>
                                         </button>
                                         <button mat-menu-item (click)="addNewAlias()">
                                             <mat-icon>short_text</mat-icon>
@@ -88,13 +92,32 @@
                                 <p fxFill class="service-port" fxLayout="row" fxLayoutAlign="start end"
                                     *ngFor="let item of service.ports||[];let i=index"
                                     [formGroup]="getPortsFormGroup(i)">
-                                    <mat-form-field class="service-port-field" appearance="fill">
-                                        <mat-label>{{"Port"|translate}}</mat-label>
-                                        <input type="number" min="1" max="65535" matInput test-id="service-port-input"
-                                            placeholder="8080" formControlName="port">
-                                        <mat-error>{{formError.ports[i]|translate}}</mat-error>
-                                        <mat-hint>{{"ServicePort"|translate}}</mat-hint>
-                                    </mat-form-field>
+                                    <span *ngIf="service.protocol !='tproxy'">
+                                        <mat-form-field class="service-port-field" appearance="fill">
+                                            <mat-label>{{"Port"|translate}}</mat-label>
+                                            <input type="number" min="1" max="65535" matInput
+                                                test-id="service-port-input" placeholder="8080" formControlName="port">
+                                            <mat-error>{{formError.ports[i]|translate}}</mat-error>
+                                            <mat-hint>{{"ServicePort"|translate}}</mat-hint>
+                                        </mat-form-field>
+                                    </span>
+
+                                    <span *ngIf="service.protocol =='tproxy'">
+                                        <mat-form-field class="service-port-field" appearance="fill">
+                                            <mat-label>{{"PortStart"|translate}}</mat-label>
+                                            <input type="number" min="1" max="65534" matInput
+                                                test-id="service-port-start-input" placeholder="3000" formControlName="portRangeStart">
+                                            <mat-error>{{formError.ports[i]|translate}}</mat-error>
+                                            <mat-hint>{{"ServiceStartPort"|translate}}</mat-hint>
+                                        </mat-form-field>
+                                        <mat-form-field class="service-port-field" appearance="fill">
+                                            <mat-label>{{"PortEnd"|translate}}</mat-label>
+                                            <input type="number" min="1" max="65535" matInput
+                                                test-id="service-port-end-input" placeholder="4000" formControlName="portRangeEnd">
+                                            <mat-error>{{formError.ports[i]|translate}}</mat-error>
+                                            <mat-hint>{{"ServiceEndPort"|translate}}</mat-hint>
+                                        </mat-form-field>
+                                    </span>
 
                                     <mat-checkbox class="service-port-each" test-id="service-port-tcp-enabled"
                                         [(ngModel)]="item.isTcp" [checked]="item.isTcp"

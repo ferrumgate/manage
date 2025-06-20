@@ -584,7 +584,7 @@ export class ESService {
         let request = {
             ignore_unavailable: true,
             index: this.getIndexName(`ip-intelligence-list-${req.id ? req.id.toLowerCase() : '*'}`),
-            size: 100000,
+            size: 10000,
             body: {
                 query: {
                     "match_all": {}
@@ -1845,7 +1845,7 @@ export class ESService {
         let request = {
             ignore_unavailable: true,
             index: this.getIndexName(`fqdn-intelligence-list-${req.id ? req.id.toLowerCase() : '*'}`),
-            size: 100000,
+            size: 10000,
             body: {
                 query: {
                     "match_all": {}

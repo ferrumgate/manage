@@ -13,6 +13,7 @@ import { UtilPKI } from '../src/utilPKI';
 chai.use(chaiHttp);
 const expect = chai.expect;
 
+
 describe('authApi', async () => {
 
     const expressApp = new ExpressApp();
@@ -20,6 +21,7 @@ describe('authApi', async () => {
     const appService = (expressApp.appService) as AppService;
     const redisService = appService.redisService;
     const configService = appService.configService;
+    const pkiService = appService.pkiService;
     const user: User = {
         username: 'hamza@ferrumgate.com',
         groupIds: [],
@@ -349,12 +351,13 @@ describe('authApi', async () => {
         }
         const ca = await configService.getCASSLCertificateSensitive();
         const inCerts = await configService.getInSSLCertificateAllSensitive();
+        await pkiService.reload();
         const cert = inCerts.find(x => x.category == 'auth');
         const userResult = await UtilPKI.createCertificate(
             {
-                CN: user.id, O: 'UK', sans: [],
+                CN: user5.id, O: 'UK', sans: [],
                 isCA: false, hashAlg: 'SHA-512', signAlg: 'RSASSA-PKCS1-v1_5', serial: 100000,
-                notAfter: new Date().addDays(5), notBefore: new Date().addDays(-10),//invalid date test
+                notAfter: new Date().addDays(5), notBefore: new Date().addDays(-10),//valid date test
                 ca: {
                     publicCrt: cert?.publicCrt || '',
                     privateKey: cert?.privateKey || '',
@@ -389,6 +392,69 @@ describe('authApi', async () => {
         })
 
         expect(response.status).to.equal(200);
+
+    }).timeout(50000);
+
+    it('POST /auth with result 401 and certificate', async () => {
+
+        const user5: User = {
+            username: 'hamza4@ferrumgate.com',
+            groupIds: [],
+            id: 'ipdfr6gyi3uzu8fk',
+            name: 'hamza',
+            password: Util.bcryptHash('somepass'),
+            source: 'local',
+            isVerified: true,
+            isLocked: false,
+            is2FA: true,
+            insertDate: new Date().toISOString(),
+            updateDate: new Date().toISOString(),
+            roleIds: []
+
+        }
+        const ca = await configService.getCASSLCertificateSensitive();
+        const inCerts = await configService.getInSSLCertificateAllSensitive();
+        await pkiService.reload();
+        const cert = inCerts.find(x => x.category == 'auth');
+        const userResult = await UtilPKI.createCertificate(
+            {
+                CN: user5.id, O: 'UK', sans: [],
+                isCA: false, hashAlg: 'SHA-512', signAlg: 'RSASSA-PKCS1-v1_5', serial: 100000,
+                notAfter: new Date().addDays(-1), notBefore: new Date().addDays(-10),//invalid date test
+                ca: {
+                    publicCrt: cert?.publicCrt || '',
+                    privateKey: cert?.privateKey || '',
+                    hashAlg: 'SHA-512', signAlg: 'RSASSA-PKCS1-v1_5'
+                }
+            })
+        const tmpDir = `/tmp/${Util.randomNumberString()}`;
+        fs.mkdirSync(tmpDir);
+        const privateKey3 = `${tmpDir}/user.key`;
+        const publicCrt3 = `${tmpDir}/user.crt`;
+        fs.writeFileSync(privateKey3, UtilPKI.toPEM(userResult.privateKeyBuffer, 'PRIVATE KEY'));
+        fs.writeFileSync(publicCrt3, UtilPKI.toPEM(userResult.certificateBuffer, 'CERTIFICATE'));
+
+        user5.cert = {
+            category: 'auth',
+            publicCrt: fs.readFileSync(publicCrt3).toString(),
+            privateKey: fs.readFileSync(privateKey3).toString()
+        }
+
+        await configService.saveUser(user5);
+
+        let response: any = await new Promise((resolve: any, reject: any) => {
+            chai.request(app)
+                .post('/api/auth')
+                .set('Cert', fs.readFileSync(publicCrt3).toString('base64'))
+                .end((err, res) => {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve(res);
+                });
+        })
+
+        expect(response.status).to.equal(401);
 
     }).timeout(50000);
 

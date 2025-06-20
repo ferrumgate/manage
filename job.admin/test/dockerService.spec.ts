@@ -47,6 +47,30 @@ describe('dockerService', () => {
 
     }).timeout(30000)
 
+
+    it('getAssignedIp', async () => {
+        await stopAllContaineers();
+        const docker = new DockerService();
+        let svc = createSampleData();
+        svc.protocol='tproxy';
+        svc.assignedIp = '172.20.0.6';
+        const result = docker.getAssignedIp(svc);
+        expect(result).to.equal('127.20.0.6');
+
+    }).timeout(30000)
+
+    it('getAssignedPort', async () => {
+        await stopAllContaineers();
+        const docker = new DockerService();
+        let svc = createSampleData();
+        svc.protocol='tproxy';
+        svc.assignedIp = '172.20.0.6';
+        svc.ports[0].port = 3306;
+        const result = docker.getAssignedPort(svc,3306);
+        expect(result).to.equal(999);
+
+    }).timeout(30000)
+
     it('getEnv', async () => {
         await stopAllContaineers();
         let svc = createSampleData();
@@ -234,5 +258,8 @@ describe('dockerService', () => {
         await stopAllContaineers();
 
     }).timeout(300000);
+
+
+
 
 })

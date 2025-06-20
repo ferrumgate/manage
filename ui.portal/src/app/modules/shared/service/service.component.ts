@@ -196,10 +196,18 @@ export class ServiceComponent implements OnInit, OnDestroy {
       fmg.controls['networkName'].disable();
       fmg.controls['name'].disable();
     }
+    
     for (const port of service.ports) {
-      (fmg.controls['ports'] as FormArray).push(new FormGroup({
-        port: new FormControl(port.port, [Validators.required, Validators.min(1)])
-      }))
+      if (this.service.protocol != 'tproxy') {
+        (fmg.controls['ports'] as FormArray).push(new FormGroup({
+          port: new FormControl(port.port, [Validators.required, Validators.min(1)])
+        }))
+      } else {
+        (fmg.controls['ports'] as FormArray).push(new FormGroup({
+          portRangeStart: new FormControl(port.portRangeStart, [Validators.required, Validators.min(1)]),
+          portRangeEnd: new FormControl(port.portRangeEnd, [Validators.required, Validators.min(1)])
+        }))
+      }
     }
     for (const host of service.hosts) {
       (fmg.controls['hosts'] as FormArray).push(new FormGroup({
@@ -398,7 +406,7 @@ export class ServiceComponent implements OnInit, OnDestroy {
 
     for (let i = 0; i < (this.formGroup.controls['ports'] as FormArray).controls.length; ++i) {
       const fmg = (this.formGroup.controls['ports'] as FormArray).controls[i] as FormGroup;
-      const portError = fmg.controls.port.errors;
+      const portError = fmg.controls.port?.errors || fmg.controls.portRangeStart?.errors || fmg.controls.portRangeEnd?.errors;
       if (portError && Object.keys(portError).length) {
         if (portError['required'])
           error.ports[i] = 'InvalidPort';
@@ -410,10 +418,19 @@ export class ServiceComponent implements OnInit, OnDestroy {
           fmg.controls['port'].setErrors({});
           fmg.markAllAsTouched();
         } else {
+          if(fmg.controls['port']){
           fmg.controls['port'].setErrors(null);
+          }
+          if(fmg.controls['portRangeStart']){
+            fmg.controls['portRangeStart'].setErrors(null);
+          }
+          if(fmg.controls['portRangeEnd']){
+            fmg.controls['portRangeEnd'].setErrors(null);
+          }
           fmg.markAllAsTouched();
         }
     }
+
 
     const networkError = this.formGroup.controls.networkId.errors;
 
@@ -452,7 +469,10 @@ export class ServiceComponent implements OnInit, OnDestroy {
     return ports.map(x => {
 
       const a: ServicePort = {
-        port: x.port, isTcp: x.isTcp, isUdp: x.isUdp, protocol: x.protocol
+        port: x.port, isTcp: x.isTcp, isUdp: x.isUdp, protocol: x.protocol, portRangeStart: x.portRangeStart, portRangeEnd: x.portRangeEnd
+      }
+      if(a.protocol=='tproxy'){
+        a.port = x.portRangeStart;
       }
       if (a.protocol == undefined)
         delete a.protocol;

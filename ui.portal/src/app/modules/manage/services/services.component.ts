@@ -118,6 +118,13 @@ export class ServicesComponent implements OnInit, OnDestroy {
       host: '', assignedIp: '', networkId: '', protocol: protocol, count: 1,
       isExpanded: true, hosts: [{ host: '' }], ports: [{ port: 80, isTcp: true, isUdp: true }]
     }
+    if(service.protocol == 'tproxy') {
+      //if tproxy, add port range
+      service.ports[0].port=1;
+      service.ports[0].portRangeStart = 1;
+      service.ports[0].portRangeEnd = 65535;
+    }
+    
     this.services.unshift(service);
   }
   saveService($event: Service) {

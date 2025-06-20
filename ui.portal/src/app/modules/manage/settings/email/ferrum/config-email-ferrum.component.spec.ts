@@ -51,28 +51,28 @@ describe('ConfigEmailSmtpComponent', () => {
     component.model = {
       type: 'google', fromname: 'testme', user: 'test@test.com', pass: 'somepass',
       isChanged: false,
-      host: 'localhost', port: 587, isSecure: false
+      url: 'http://localhost', 
     }
     tick(1000);
     fixture.detectChanges();
 
-    expectValue(fixture, 'config-email-smtp-user-input', 'test@test.com');
-    expectValue(fixture, 'config-email-smtp-pass-input', 'somepass');
-    expectValue(fixture, 'config-email-smtp-host-input', 'localhost');
-    expectValue(fixture, 'config-email-smtp-port-input', '587');
+    expectValue(fixture, 'config-email-ferrum-user-input', 'test@test.com');
+    expectValue(fixture, 'config-email-ferrum-pass-input', 'somepass');
+    expectValue(fixture, 'config-email-ferrum-url-input', 'http://localhost');
+  
     expect(component.formGroup.valid).toBeTruthy();
     expect(component.model.isChanged).toBeFalse();
-    findEl(fixture, 'config-email-smtp-delete-button');
-    findEl(fixture, 'config-email-smtp-send-button');
+    findEl(fixture, 'config-email-ferrum-delete-button');
+    findEl(fixture, 'config-email-ferrum-send-button');
 
     // set some invalid data
-    setFieldValue(fixture, 'config-email-smtp-host-input', '');
-    dispatchFakeEvent(findEl(fixture, 'config-email-smtp-host-input').nativeElement, 'blur');
+    setFieldValue(fixture, 'config-email-ferrum-url-input', '');
+    dispatchFakeEvent(findEl(fixture, 'config-email-ferrum-url-input').nativeElement, 'blur');
     tick(1000);
     fixture.detectChanges();
 
     expect(component.formGroup.invalid).toBeTrue();
-    expect(component.model.host).toBe('');
+    expect(component.model.url).toBe('');
 
   }));
 

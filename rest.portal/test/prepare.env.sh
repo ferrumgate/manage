@@ -40,9 +40,9 @@ docker run --net=host --name pebble -e "PEBBLE_VA_NOSLEEP=1" --mount src=/tmp/my
 #docker run --name redisgears --rm -d -p 6381:6379 redislabs/redisgears:latest
 
 set +e
-#docker stop es
+docker stop es
 set -e
-#docker run --name es --rm -d -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" elasticsearch:8.5.0
+docker run --name es --rm -d -p 9200:9200 -p 9300:9300 -e "ES_JAVA_OPTS=-Xms128m -Xmx1g" -e "ELASTIC_PASSWORD=123456"  -e "discovery.type=single-node" elasticsearch:8.5.0
 ###
 ##docker exec -ti $ES /bin/bash
 ## elasticsearch-reset-password -i -u elastic

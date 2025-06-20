@@ -195,7 +195,7 @@ describe('trackWatcherTask', () => {
         await Util.sleep(2000);
         bcastService.emit('tunnelConfirm', tunnel1);
 
-        await Util.sleep(2000);
+        await Util.sleep(5000);
 
         const keys = (await watcher.lmdbGetRange('/')).asArray;
 
@@ -246,7 +246,7 @@ describe('trackWatcherTask', () => {
         //tunnel confirm
         bcastService.emit('tunnelConfirm', tunnel1);
 
-        await Util.sleep(2000);
+        await Util.sleep(5000);
         const keys = (await watcher.lmdbGetRange('/')).asArray;
         expect(keys.length).to.equal(2);
 

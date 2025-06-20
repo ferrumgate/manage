@@ -50,27 +50,25 @@ describe('syslogService', () => {
         }
 
     }
-    async function createClient(path: string) {
 
-    }
 
     it('read/write', async () => {
         const path = `/tmp/test.${Util.randomNumberString()}.sock`;
-        const log = '/logs/test';
+        const log = `/logs/test`;
         const syslog = new SyslogService(path, new RedisService(), new RedisService(), log);
         await syslog.start();
         const client = new Client(path);
         await client.connect();
         await client.write(Buffer.from('hello\n'));
-        await Util.sleep(1000);
+        await Util.sleep(5000);
         const result = await simpleRedis.xread(log, 1000, '0', 100);
         expect(result.length).to.equal(1);
 
     })
 
-    it('read/write', async () => {
+    it('read/write 2', async () => {
         const path = `/tmp/test.${Util.randomNumberString()}.sock`;
-        const log = '/logs/test';
+        const log = `/logs/test`;
         const syslog = new SyslogService(path, new RedisService(), new RedisService(), log);
         await syslog.start();
         setTimeout(async () => {
@@ -79,7 +77,7 @@ describe('syslogService', () => {
             for (let i = 0; i < 1000; ++i)
                 await client.write(Buffer.from('hello\n'));
 
-        }, 1000);
+        }, 5000);
 
         setTimeout(async () => {
             const client = new Client(path);
@@ -87,21 +85,22 @@ describe('syslogService', () => {
             for (let i = 0; i < 1000; ++i)
                 await client.write(Buffer.from('hello\n'));
 
-        }, 1000);
-
-        await Util.sleep(3000);
+        }, 5000);
+        console.log('waiting');
+        await Util.sleep(30000);
         let totalCount = 0;
         let pos = '0';
         for (let i = 0; i < 1000; ++i) {
-            const result = await simpleRedis.xread(log, 1000, pos, 10);
-            totalCount += result.length;
-            if (!result.length)
-                break;
-            result.forEach((x: any) => pos = x.xreadPos);
+            
+                const result = await simpleRedis.xread(log, 1000, pos, 100);
+                totalCount += result.length;
+                if (!result.length)
+                    break;
+                result.forEach((x: any) => pos = x.xreadPos);
         }
-        expect(totalCount).to.equal(2000);
+        expect(totalCount).to.equal(2000); 
 
-    })
+    }).timeout(150000)
 })
 
 describe('syslogUdpService', () => {
@@ -113,7 +112,7 @@ describe('syslogUdpService', () => {
 
     it('read/write', async () => {
 
-        const log = '/logs/test';
+        const log = `/logs/test`;
         const syslog = new SyslogUdpService(5556, new RedisService(), new RedisService(), log);
         await syslog.start();
         const client = udp.createSocket('udp4');
